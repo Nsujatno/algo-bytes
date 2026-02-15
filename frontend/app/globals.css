@@ -1,26 +1,34 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+    --color-background: #0A0A0A;
+    --color-foreground: #FAFAFA;
+
+    --color-surface: #141414;
+    --color-border: #262626;
+
+    --color-accent: #FCD34D;
+    --color-accent-foreground: #000000;
+
+    --color-muted: #A1A1A1;
+    --color-input: #141414;
+    /* Match card/surface for inputs or slightly different if needed */
+
+    --font-sans: var(--font-inter);
+    --font-mono: var(--font-jetbrains-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+:root {
+    color-scheme: dark;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+}
+
+/* Utilities */
+@utility ring-accent {
+    --tw-ring-color: var(--color-accent);
 }
