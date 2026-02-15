@@ -23,6 +23,10 @@ export default function SignupPage() {
         <CardContent className="space-y-4 pb-6">
           <form action={signup} className="space-y-4">
             <div className="space-y-2">
+              <Label htmlFor="username">Username</Label>
+              <Input id="username" name="username" type="text" placeholder="username" required />
+            </div>
+            <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input id="email" name="email" type="email" placeholder="name@example.com" required />
             </div>
