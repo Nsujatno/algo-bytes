@@ -1,5 +1,8 @@
-import { redirect } from "next/navigation"
-import { createClient } from "@/utils/supabase/server"
+'use client';
+
+import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
+import { createClient } from "@/utils/supabase/client"
 
 import { DailyChallengeCard } from "@/components/dashboard/daily-challenge-card"
 import { DashboardHeader } from "@/components/dashboard/header"
@@ -10,23 +13,62 @@ import {
   Tabs,
   TabsContent,
 } from "@/components/ui/tabs"
+import { Loader2 } from "lucide-react"
 
-export default async function Home() {
-  const supabase = await createClient()
+export default function Home() {
+  const [user, setUser] = useState<any>(null);
+  const [profile, setProfile] = useState<any>(null);
+  const [challenge, setChallenge] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const router = useRouter();
+  const supabase = createClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        if (!user) {
+          router.push("/login");
+          return;
+        }
+        setUser(user);
 
-  if (!user) {
-    return redirect("/login")
+        // Fetch Profile
+        const { data: profile } = await supabase
+            .from("profiles")
+            .select("username, practice_credits, streak_count")
+            .eq("id", user.id)
+            .single();
+        setProfile(profile);
+
+        // Fetch Today's Challenge via API
+        const res = await fetch('/api/challenges/today');
+        if (res.ok) {
+            const challengeData = await res.json();
+            setChallenge(challengeData);
+        } else {
+            console.error("Failed to fetch daily challenge");
+        }
+      } catch (error) {
+        console.error("Error loading dashboard:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadData();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+      </div>
+    );
   }
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("username, practice_credits, streak_count")
-    .eq("id", user.id)
-    .single()
+  if (!user) return null;
 
   return (
     <div className="min-h-screen bg-background text-foreground font-sans">
@@ -49,7 +91,10 @@ export default async function Home() {
           </div>
 
           <TabsContent value="daily" className="flex justify-center pt-4">
-            <DailyChallengeCard streak={profile?.streak_count ?? 0} />
+            <DailyChallengeCard 
+              streak={profile?.streak_count ?? 0} 
+              challenge={challenge} 
+            />
           </TabsContent>
 
           <TabsContent value="lab" className="pt-4">
