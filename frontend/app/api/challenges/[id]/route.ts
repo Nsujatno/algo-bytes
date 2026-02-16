@@ -25,6 +25,8 @@ export async function GET(
     }
 
     let isCompleted = false;
+    let streakCount = 0;
+
     if (user) {
         const { data: progress } = await supabase
             .from('user_progress')
@@ -36,10 +38,22 @@ export async function GET(
         if (progress?.completed) {
             isCompleted = true;
         }
+
+        // Fetch user's streak count
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('streak_count')
+            .eq('id', user.id)
+            .single();
+
+        if (profile) {
+            streakCount = profile.streak_count ?? 0;
+        }
     }
 
     return NextResponse.json({
         ...challenge,
-        completed: isCompleted
+        completed: isCompleted,
+        streak_count: streakCount
     });
 }

@@ -12,6 +12,7 @@ export interface Challenge {
     daily_date: string | null;
     created_at: string;
     completed?: boolean;
+    streak_count?: number;
 }
 
 export interface ChallengeData {

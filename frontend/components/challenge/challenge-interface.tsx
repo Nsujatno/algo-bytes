@@ -485,7 +485,8 @@ export function ChallengeInterface({ challenge }: ChallengeInterfaceProps) {
                                  size="sm" 
                                  onClick={() => {
                                      const timeTaken = Math.floor((Date.now() - startTimeRef.current) / 1000);
-                                     const text = `Algobytes Daily ${new Date().toLocaleDateString()}\n${challenge.title}\n⏱️ ${timeTaken}s\n✅ Solved!`;
+                                     const streakText = challenge.streak_count ? `🔥 ${challenge.streak_count} day streak\n` : '';
+                                     const text = `Algobytes Daily ${new Date().toLocaleDateString()}\n${challenge.title}\n⏱️ ${timeTaken}s\n${streakText}✅ Solved!`;
                                      navigator.clipboard.writeText(text);
                                      setIsCopied(true);
                                      setTimeout(() => setIsCopied(false), 2000);
