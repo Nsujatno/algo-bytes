@@ -41,17 +41,16 @@ export function DraggableBlock({ block, className, isOverlay, disabled, onClick 
         className
       )}
     >
-      {/* Indentation */}
-      {block.indentation > 0 && (
-         <div style={{ width: `${block.indentation * 24}px` }} className="shrink-0" />
-      )}
+      {/* Indentation Removed (Handled by DropZone) */}
 
       {/* Grip Icon (only visible on hover for draggable blocks) */}
-      {!disabled && (
-        <div className="opacity-0 group-hover:opacity-100 transition-opacity px-1 cursor-grab">
-           <GripVertical className="h-3 w-3 text-muted-foreground/50" />
-        </div>
-      )}
+      {/* Grip Icon (always present for alignment, invisible if disabled/not hovered) */}
+      <div className={cn(
+        "px-1 transition-opacity", 
+        disabled ? "opacity-0 cursor-default select-none" : "opacity-0 group-hover:opacity-100 cursor-grab"
+      )}>
+         <GripVertical className="h-3 w-3 text-muted-foreground/50" />
+      </div>
 
       <span className="select-none flex-1 truncate">
         {/* Basic Syntax Highlighting Logic */}

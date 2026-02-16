@@ -12,9 +12,10 @@ interface DropZoneProps {
   isOver?: boolean;
   isLocked?: boolean;
   onBlockClick?: (id: string) => void;
+  indentation?: number;
 }
 
-export function DropZone({ id, index, block, isLocked, onBlockClick }: DropZoneProps) {
+export function DropZone({ id, index, block, isLocked, onBlockClick, indentation }: DropZoneProps) {
   const { setNodeRef, isOver } = useDroppable({
     id: id,
     data: { index },
@@ -35,6 +36,7 @@ export function DropZone({ id, index, block, isLocked, onBlockClick }: DropZoneP
           !block && "border-l-2 border-transparent",
           isOver && !block && "border-l-2 border-blue-500"
         )}
+        style={{ paddingLeft: indentation ? `${(indentation * 20) + 8}px` : '8px' }} // 8px is original pl-2
       >
         {block ? (
           <div className="w-full">

@@ -16,8 +16,8 @@ export interface Challenge {
 
 export interface ChallengeData {
     problem_statement: string;
-    input_example: string;
-    output_example: string;
+    input_example: string | string[];
+    output_example: string | string[];
     constraints: string[];
     hints: string[];
     visual_input?: VisualInput;

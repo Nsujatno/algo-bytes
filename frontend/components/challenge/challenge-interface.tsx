@@ -20,9 +20,11 @@ import { DraggableBlock } from './draggable-block';
 import { DropZone } from './drop-zone';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { ArrowLeft, RefreshCw, Play, CheckCircle2, AlertCircle, Lightbulb, Home } from 'lucide-react';
+import { ArrowLeft, RefreshCw, Play, CheckCircle2, AlertCircle, Lightbulb, Home, Share2 } from 'lucide-react';
 import Link from 'next/link';
 import confetti from 'canvas-confetti';
+import remarkGfm from 'remark-gfm';
+import ReactMarkdown from 'react-markdown';
 import { useRouter } from 'next/navigation';
 
 interface ChallengeInterfaceProps {
@@ -47,7 +49,9 @@ export function ChallengeInterface({ challenge }: ChallengeInterfaceProps) {
   const [validationResult, setValidationResult] = useState<{ correct: boolean; details: boolean[] } | null>(null);
   const [hintsRevealed, setHintsRevealed] = useState(0);
   const [isValidating, setIsValidating] = useState(false);
+  const [slotIndentations, setSlotIndentations] = useState<number[]>([]);
   const startTimeRef = useRef<number>(Date.now());
+  const [isCopied, setIsCopied] = useState(false);
   const router = useRouter();
 
   // Click-to-place handler (Bidirectional)
@@ -96,6 +100,15 @@ export function ChallengeInterface({ challenge }: ChallengeInterfaceProps) {
     const items = allBlocks.map(b => ({ ...b })); // Clone
     const totalSlots = challenge.challenge_data.total_slots;
     
+    // Compute Indentations for each slot based on the correct solution
+    const indentations = new Array(totalSlots).fill(0);
+    allBlocks.forEach(block => {
+        if (block.correct_position !== undefined && block.correct_position < totalSlots) {
+            indentations[block.correct_position] = block.indentation;
+        }
+    });
+    setSlotIndentations(indentations);
+
     const boilerplateBlocks = items.filter(b => b.is_boilerplate);
     const draggableBlocks = [
         ...items.filter(b => !b.is_boilerplate),
@@ -348,23 +361,40 @@ export function ChallengeInterface({ challenge }: ChallengeInterfaceProps) {
           {/* Left: Problem Statement (Fixed width) */}
           <div className="w-[320px] bg-surface border border-border rounded-lg p-6 overflow-y-auto hidden lg:block shrink-0">
             <h2 className="text-lg font-bold mb-4">Problem</h2>
-            <p className="text-muted-foreground mb-6 text-sm leading-relaxed">
-              {challenge.description}
-            </p>
+            <div className="text-muted-foreground mb-6 text-sm leading-relaxed prose prose-sm dark:prose-invert max-w-none">
+              <ReactMarkdown>{challenge.description}</ReactMarkdown>
+            </div>
             
-            <div className="space-y-4">
-              <div>
-                <h3 className="text-xs uppercase tracking-wider text-muted-foreground mb-2 font-semibold">Input Example</h3>
-                <code className="block bg-background p-3 rounded text-sm font-mono text-purple-300">
-                  {challenge.challenge_data.input_example}
-                </code>
-              </div>
-              <div>
-                <h3 className="text-xs uppercase tracking-wider text-muted-foreground mb-2 font-semibold">Output Example</h3>
-                <code className="block bg-background p-3 rounded text-sm font-mono text-green-300">
-                  {challenge.challenge_data.output_example}
-                </code>
-              </div>
+            <div className="space-y-6">
+              {(() => {
+                 const inputExamples = Array.isArray(challenge.challenge_data.input_example) 
+                    ? challenge.challenge_data.input_example 
+                    : [challenge.challenge_data.input_example];
+                 const outputExamples = Array.isArray(challenge.challenge_data.output_example)
+                    ? challenge.challenge_data.output_example
+                    : [challenge.challenge_data.output_example];
+                 
+                 return inputExamples.map((inputEx, i) => (
+                   <div key={i}>
+                      <h3 className="text-xs uppercase tracking-wider text-muted-foreground mb-2 font-semibold">Example {i + 1}</h3>
+                      <div className="flex flex-col gap-3 pl-3 border-l-2 border-muted/20">
+                        <div>
+                          <span className="text-xs text-muted-foreground font-medium mb-1 block">Input</span>
+                          <code className="block bg-background p-2 rounded text-sm font-mono text-purple-300 break-words whitespace-pre-wrap">
+                            {inputEx}
+                          </code>
+                        </div>
+                        <div>
+                          <span className="text-xs text-muted-foreground font-medium mb-1 block">Output</span>
+                          <code className="block bg-background p-2 rounded text-sm font-mono text-green-300 break-words whitespace-pre-wrap">
+                            {outputExamples[i] || ''}
+                          </code>
+                        </div>
+                      </div>
+                   </div>
+                 ));
+              })()}
+            </div>
 
                {/* Hints Section */}
               <div className="pt-4 border-t border-border mt-6">
@@ -400,7 +430,6 @@ export function ChallengeInterface({ challenge }: ChallengeInterfaceProps) {
                 </div>
               </div>
             </div>
-          </div>
 
           {/* Right Column: Workspace + Pool */}
           <div className="flex flex-col flex-1 gap-4 min-h-0">
@@ -426,6 +455,7 @@ export function ChallengeInterface({ challenge }: ChallengeInterfaceProps) {
                             block={block || undefined}
                             isLocked={block?.is_boilerplate}
                             onBlockClick={handleBlockClick}
+                            indentation={slotIndentations[index] || 0}
                         />
                         ))}
                     </div>
@@ -440,12 +470,31 @@ export function ChallengeInterface({ challenge }: ChallengeInterfaceProps) {
                         : "bg-red-500/10 border-red-500/20 text-red-400"
                     )}>
                       {validationResult.correct ? (
+
                         <>
-                           <CheckCircle2 className="w-6 h-6" />
-                           <div>
-                             <p className="font-bold">Challenge Solved!</p>
-                             <p className="text-sm opacity-90">Great job!</p>
+                           <div className="flex-1 flex items-center gap-3">
+                               <CheckCircle2 className="w-6 h-6" />
+                               <div>
+                                 <p className="font-bold">Challenge Solved!</p>
+                                 <p className="text-sm opacity-90">Great job!</p>
+                               </div>
                            </div>
+                           {challenge.is_daily && (
+                               <Button 
+                                 variant="outline" 
+                                 size="sm" 
+                                 onClick={() => {
+                                     const timeTaken = Math.floor((Date.now() - startTimeRef.current) / 1000);
+                                     const text = `Algobytes Daily ${new Date().toLocaleDateString()}\n${challenge.title}\n⏱️ ${timeTaken}s\n✅ Solved!`;
+                                     navigator.clipboard.writeText(text);
+                                     setIsCopied(true);
+                                     setTimeout(() => setIsCopied(false), 2000);
+                                 }} 
+                                 className="gap-2 ml-4 bg-background/50 hover:bg-background/80 border-green-500/30 text-green-400 hover:text-green-300 min-w-[100px]"
+                               >
+                                   {isCopied ? "Copied!" : <>Share <Share2 className="w-3 h-3" /></>}
+                               </Button>
+                           )}
                         </>
                       ) : (
                         <>
