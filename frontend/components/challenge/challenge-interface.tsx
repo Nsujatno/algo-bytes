@@ -20,7 +20,7 @@ import { DraggableBlock } from './draggable-block';
 import { DropZone } from './drop-zone';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { ArrowLeft, RefreshCw, Play, CheckCircle2, AlertCircle, Lightbulb, Home, Share2 } from 'lucide-react';
+import { ArrowLeft, RefreshCw, Play, CheckCircle2, AlertCircle, Lightbulb, Home, Share2, ChevronLeft, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
 import confetti from 'canvas-confetti';
 import remarkGfm from 'remark-gfm';
@@ -52,6 +52,10 @@ export function ChallengeInterface({ challenge }: ChallengeInterfaceProps) {
   const [slotIndentations, setSlotIndentations] = useState<number[]>([]);
   const startTimeRef = useRef<number>(Date.now());
   const [isCopied, setIsCopied] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [sidebarWidth, setSidebarWidth] = useState(320);
+  const [isResizing, setIsResizing] = useState(false);
+  const [attemptHistory, setAttemptHistory] = useState<string[]>([]);
   const router = useRouter();
 
   // Click-to-place handler (Bidirectional)
@@ -144,6 +148,37 @@ export function ChallengeInterface({ challenge }: ChallengeInterfaceProps) {
         setValidationResult(null);
     }
   }, [challenge]);
+
+  // Resizing handlers
+  const startResizing = (e: React.MouseEvent) => {
+    setIsResizing(true);
+    e.preventDefault();
+  };
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isResizing) return;
+      
+      const newWidth = e.clientX - 24; // 24px padding/offset
+      if (newWidth > 200 && newWidth < 600) {
+        setSidebarWidth(newWidth);
+      }
+    };
+
+    const handleMouseUp = () => {
+      setIsResizing(false);
+    };
+
+    if (isResizing) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isResizing]);
 
   // Drag handlers
   function handleDragStart(event: DragStartEvent) {
@@ -265,6 +300,10 @@ export function ChallengeInterface({ challenge }: ChallengeInterfaceProps) {
                 details: data.results 
             });
             
+            if (data.emoji_grid) {
+                setAttemptHistory(prev => [...prev, data.emoji_grid]);
+            }
+            
             if (data.correct) {
                 confetti({
                     particleCount: 100,
@@ -357,9 +396,25 @@ export function ChallengeInterface({ challenge }: ChallengeInterfaceProps) {
           </div>
         </header>
 
-        <div className="flex flex-1 gap-6 min-h-0 overflow-hidden">
-          {/* Left: Problem Statement (Fixed width) */}
-          <div className="w-[320px] bg-surface border border-border rounded-lg p-6 overflow-y-auto hidden lg:block shrink-0">
+        <div className="flex flex-1 gap-6 min-h-0 overflow-hidden relative">
+          {/* Left: Problem Statement (Collapsible & Resizable) */}
+          <div 
+            style={{ width: isSidebarOpen ? `${sidebarWidth}px` : '0px' }}
+            className={cn(
+                "bg-surface border border-border rounded-lg overflow-hidden transition-all duration-300 ease-in-out shrink-0 flex flex-col relative",
+                isSidebarOpen ? "p-6 opacity-100" : "p-0 border-none opacity-0"
+            )}
+          >
+           {/* Resizer Handle */}
+           <div
+              className={cn(
+                "absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-yellow-500/50 transition-colors z-20",
+                isResizing ? "bg-yellow-500" : "bg-transparent"
+              )}
+              onMouseDown={startResizing}
+           />
+
+            <div className="overflow-y-auto h-full min-w-[270px]">
             <h2 className="text-lg font-bold mb-4">Problem</h2>
             <div className="text-muted-foreground mb-6 text-sm leading-relaxed prose prose-sm dark:prose-invert max-w-none">
               <ReactMarkdown>{challenge.description}</ReactMarkdown>
@@ -430,6 +485,25 @@ export function ChallengeInterface({ challenge }: ChallengeInterfaceProps) {
                 </div>
               </div>
             </div>
+          </div>
+
+          {/* Sidebar Toggle Button */}
+          <div className="absolute left-0 top-1/2 -translate-y-1/2 z-10 transition-all duration-300"
+               style={{ left: isSidebarOpen ? `${sidebarWidth - 16}px` : '0px' }}>
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-24 w-6 rounded-r-lg rounded-l-none border-l-0 bg-surface shadow-md hover:bg-muted/50"
+              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+              title={isSidebarOpen ? "Collapse Sidebar" : "Expand Sidebar"}
+            >
+              {isSidebarOpen ? (
+                <ChevronLeft className="h-4 w-4" />
+              ) : (
+                <ChevronRight className="h-4 w-4" />
+              )}
+            </Button>
+          </div>
 
           {/* Right Column: Workspace + Pool */}
           <div className="flex flex-col flex-1 gap-4 min-h-0">
@@ -486,7 +560,8 @@ export function ChallengeInterface({ challenge }: ChallengeInterfaceProps) {
                                  onClick={() => {
                                      const timeTaken = Math.floor((Date.now() - startTimeRef.current) / 1000);
                                      const streakText = challenge.streak_count ? `🔥 ${challenge.streak_count} day streak\n` : '';
-                                     const text = `Algobytes Daily ${new Date().toLocaleDateString()}\n${challenge.title}\n⏱️ ${timeTaken}s\n${streakText}✅ Solved!`;
+                                     const historyGrid = attemptHistory.join('\n');
+                                     const text = `Algobytes ${new Date().toLocaleDateString()}\n${challenge.title}\n⏱️ ${timeTaken}s\n${streakText}✅ Solved!\n\n${historyGrid}`;
                                      navigator.clipboard.writeText(text);
                                      setIsCopied(true);
                                      setTimeout(() => setIsCopied(false), 2000);

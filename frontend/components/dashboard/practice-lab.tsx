@@ -27,6 +27,7 @@ export function PracticeLab() {
   const [challenges, setChallenges] = useState<PracticeChallenge[]>([]);
   const [loading, setLoading] = useState(true);
   const [unlockingId, setUnlockingId] = useState<string | null>(null);
+  const [activeFilter, setActiveFilter] = useState("All");
   const router = useRouter();
 
   // Fetch challenges
@@ -72,26 +73,34 @@ export function PracticeLab() {
       return <div className="flex justify-center p-8"><Loader2 className="animate-spin" /></div>;
   }
 
+  // Extract unique categories
+  const categories = ["All", ...Array.from(new Set(challenges.map(c => c.algorithm_category)))];
+
+  // Filter challenges
+  const filteredChallenges = activeFilter === "All" 
+    ? challenges 
+    : challenges.filter(c => c.algorithm_category === activeFilter);
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-2 pb-4 overflow-x-auto">
-        <Badge variant="yellow" className="cursor-pointer">
-          All
-        </Badge>
-        {/* Categories could be dynamic too, but static is fine for now */}
-        <Badge variant="outline" className="cursor-pointer hover:bg-muted">
-          Arrays
-        </Badge>
-        <Badge variant="outline" className="cursor-pointer hover:bg-muted">
-          Trees
-        </Badge>
-        <Badge variant="outline" className="cursor-pointer hover:bg-muted">
-          Stack
-        </Badge>
+        {categories.map(category => (
+            <Badge 
+                key={category}
+                variant={activeFilter === category ? "yellow" : "outline"} 
+                className={cn(
+                    "cursor-pointer whitespace-nowrap",
+                    activeFilter !== category && "hover:bg-muted"
+                )}
+                onClick={() => setActiveFilter(category)}
+            >
+                {category}
+            </Badge>
+        ))}
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {challenges.map((challenge) => (
+        {filteredChallenges.map((challenge) => (
           <Card
             key={challenge.id}
             className="flex flex-col justify-between border-border bg-surface transition-colors hover:border-accent/50"
