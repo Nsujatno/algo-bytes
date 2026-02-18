@@ -14,46 +14,26 @@ export async function POST(
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // 1. Check Credits
-    const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('practice_credits')
-        .eq('id', user.id)
-        .single();
+    // Unlock via RPC
+    const { data: rpcData, error: rpcError } = await supabase.rpc('unlock_challenge', {
+        p_user_id: user.id,
+        p_challenge_id: id
+    });
 
-    if (profileError || !profile) {
-        return NextResponse.json({ error: 'Profile not found' }, { status: 404 });
-    }
-
-    if (profile.practice_credits < 1) {
-        return NextResponse.json({ error: 'Insuffient credits' }, { status: 400 });
-    }
-
-    // 2. Deduct Credit
-    const { error: updateError } = await supabase
-        .from('profiles')
-        .update({ practice_credits: profile.practice_credits - 1 })
-        .eq('id', user.id);
-
-    if (updateError) {
-        return NextResponse.json({ error: 'Failed to update credits' }, { status: 500 });
-    }
-
-    // 3. Unlock Challenge (Create progress entry)
-    const { error: unlockError } = await supabase
-        .from('user_progress')
-        .insert({
-            user_id: user.id,
-            challenge_id: id,
-            completed: false,
-            time_taken: null
-        });
-
-    if (unlockError) {
-        // Rollback credit? keeping simple for now
-        console.error("Unlock error:", unlockError);
+    if (rpcError) {
+        console.error("Unlock error:", rpcError);
+        // Handle exception
+        if (rpcError.message.includes('Insufficient credits')) {
+            return NextResponse.json({ error: 'Insufficient credits' }, { status: 400 });
+        }
         return NextResponse.json({ error: 'Failed to unlock challenge' }, { status: 500 });
     }
 
-    return NextResponse.json({ success: true, remaining_credits: profile.practice_credits - 1 });
+    const result = Array.isArray(rpcData) && rpcData.length > 0 ? rpcData[0] : null;
+
+    if (!result) {
+        return NextResponse.json({ error: 'Unexpected response from unlock operation' }, { status: 500 });
+    }
+
+    return NextResponse.json({ success: result.success, remaining_credits: result.remaining_credits });
 }

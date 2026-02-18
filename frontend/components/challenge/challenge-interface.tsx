@@ -26,6 +26,7 @@ import confetti from 'canvas-confetti';
 import remarkGfm from 'remark-gfm';
 import ReactMarkdown from 'react-markdown';
 import { useRouter } from 'next/navigation';
+import { CompletionModal } from './completion-modal';
 
 interface ChallengeInterfaceProps {
   challenge: Challenge;
@@ -57,6 +58,13 @@ export function ChallengeInterface({ challenge }: ChallengeInterfaceProps) {
   const [isResizing, setIsResizing] = useState(false);
   const [attemptHistory, setAttemptHistory] = useState<string[]>([]);
   const router = useRouter();
+
+  const [showCompletionModal, setShowCompletionModal] = useState(false);
+  const [completionStats, setCompletionStats] = useState({
+      timeTaken: 0,
+      streakCount: challenge.streak_count || 0,
+      attemptHistory: [] as string[]
+  });
 
   // Click-to-place handler (Bidirectional)
   const handleBlockClick = (blockId: string) => {
@@ -285,6 +293,7 @@ export function ChallengeInterface({ challenge }: ChallengeInterfaceProps) {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                'x-user-timezone': Intl.DateTimeFormat().resolvedOptions().timeZone,
             },
             body: JSON.stringify({ 
                 solution,
@@ -305,11 +314,22 @@ export function ChallengeInterface({ challenge }: ChallengeInterfaceProps) {
             }
             
             if (data.correct) {
-                confetti({
-                    particleCount: 100,
-                    spread: 70,
-                    origin: { y: 0.6 }
-                });
+                if (!challenge.is_daily) {
+                    confetti({
+                        particleCount: 100,
+                        spread: 70,
+                        origin: { y: 0.6 }
+                    });
+                }
+
+                if (challenge.is_daily) {
+                    setCompletionStats({
+                        timeTaken: Math.floor((Date.now() - startTimeRef.current) / 1000),
+                        streakCount: data.new_streak || challenge.streak_count || 0,
+                        attemptHistory: [...attemptHistory, data.emoji_grid || ''].filter(Boolean)
+                    });
+                    setTimeout(() => setShowCompletionModal(true), 800); 
+                }
             }
         } else {
             console.error('Validation failed:', data.error);
@@ -629,6 +649,15 @@ export function ChallengeInterface({ challenge }: ChallengeInterfaceProps) {
         </DragOverlay>
 
       </div>
+
+        <CompletionModal 
+            isOpen={showCompletionModal}
+            challengeTitle={challenge.title}
+            timeTaken={completionStats.timeTaken}
+            streakCount={completionStats.streakCount}
+            attemptHistory={completionStats.attemptHistory}
+            onClose={() => setShowCompletionModal(false)}
+        />
     </DndContext>
   );
 }

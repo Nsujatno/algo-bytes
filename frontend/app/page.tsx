@@ -43,7 +43,12 @@ export default function Home() {
         setProfile(profile);
 
         // Fetch Today's Challenge via API
-        const res = await fetch('/api/challenges/today');
+        const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        const res = await fetch('/api/challenges/today', {
+            headers: {
+                'x-user-timezone': userTimezone
+            }
+        });
         if (res.ok) {
             const challengeData = await res.json();
             setChallenge(challengeData);

@@ -56,7 +56,10 @@ export function PracticeLab() {
         const data = await res.json();
         
         if (res.ok) {
-            // Success! Refresh list to show available
+            // Success! Refresh list or update local state
+            setChallenges(prev => prev.map(c => 
+                c.id === id ? { ...c, status: 'available' } : c
+            ));
              // Success! Route to the challenge
              router.push(`/challenge/${id}`);
         } else {

@@ -7,7 +7,9 @@ export async function GET(request: NextRequest) {
 
     const { data: { user } } = await supabase.auth.getUser();
 
-    const today = new Date().toISOString().split('T')[0];
+    const userTimezone = request.headers.get('x-user-timezone') || 'UTC';
+
+    const today = new Date().toLocaleDateString('en-CA', { timeZone: userTimezone });
 
     const { data: challenge, error } = await supabase
         .from('challenges')

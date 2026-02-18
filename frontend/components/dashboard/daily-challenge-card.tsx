@@ -38,8 +38,12 @@ export function DailyChallengeCard({ streak, challenge }: DailyChallengeCardProp
   }
 
   const dateDisplay = challenge.daily_date 
-    ? new Date(challenge.daily_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-    : new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+    ? new Date(
+        parseInt(challenge.daily_date.split('-')[0]),
+        parseInt(challenge.daily_date.split('-')[1]) - 1,
+        parseInt(challenge.daily_date.split('-')[2])
+      ).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+    : new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
   return (
     <Card className="w-full max-w-2xl border-border bg-surface">

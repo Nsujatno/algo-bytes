@@ -75,64 +75,31 @@ export async function POST(
 
     // 5. Update Progress if Correct
     if (allCorrect) {
-        const now = new Date();
-        const today = now.toISOString().split('T')[0];
-        const { error: progressError } = await supabase
-            .from('user_progress')
-            .upsert({
-                user_id: user.id,
-                challenge_id: challenge.id,
-                completed: true,
-                completed_at: now.toISOString(),
-                time_taken: typeof time_taken === 'number' ? time_taken : null
-            }, {
-                onConflict: 'user_id,challenge_id'
+        const timeVal = typeof time_taken === 'number' ? time_taken : null;
+
+        // Pass user's timezone if available (could be header or body, defaulting to UTC)
+        const userTimezone = request.headers.get('x-user-timezone') || 'UTC';
+
+        // Atomic completion via RPC
+        const { data: stats, error: rpcError } = await supabase.rpc('complete_challenge', {
+            p_user_id: user.id,
+            p_challenge_id: challenge.id,
+            p_time_taken: timeVal,
+            p_user_timezone: userTimezone
+        });
+
+        if (rpcError) {
+            console.error('Error completing challenge:', rpcError);
+        } else if (stats && stats.length > 0) {
+            const result = stats[0];
+            return NextResponse.json({
+                correct: allCorrect,
+                results,
+                emoji_grid: emojiGrid,
+                message: allCorrect ? 'Challenge Completed!' : 'Some blocks are incorrect.',
+                new_streak: result.new_streak,
+                is_new_completion: result.is_new_completion
             });
-
-        if (progressError) {
-            console.error('Error updating progress:', progressError);
-        }
-
-        const { data: profile, error: profileFetchError } = await supabase
-            .from('profiles')
-            .select('streak_count, last_played_date, completed_challenges')
-            .eq('id', user.id)
-            .single();
-
-        if (profile) {
-            let newStreak = profile.streak_count || 0;
-            const lastPlayed = profile.last_played_date;
-
-            // Streak Logic
-            if (lastPlayed === today) {
-                // Already played today, streak stays same
-            } else {
-                const yesterday = new Date(now);
-                yesterday.setDate(yesterday.getDate() - 1);
-                const yesterdayStr = yesterday.toISOString().split('T')[0];
-
-                if (lastPlayed === yesterdayStr) {
-                    newStreak += 1; // Continued streak
-                } else {
-                    newStreak = 1; // Broken streak or first time
-                }
-            }
-
-            // Array Logic
-            let newCompleted = profile.completed_challenges || [];
-            if (!Array.isArray(newCompleted)) newCompleted = [];
-            if (!newCompleted.includes(challenge.id)) {
-                newCompleted.push(challenge.id);
-            }
-
-            await supabase
-                .from('profiles')
-                .update({
-                    streak_count: newStreak,
-                    last_played_date: today,
-                    completed_challenges: newCompleted
-                })
-                .eq('id', user.id);
         }
     }
 
