@@ -18,7 +18,7 @@ export function DashboardHeader({ credits, username }: DashboardHeaderProps) {
       <div className="flex items-center gap-2">
         <Logo className="h-8 w-8" />
         <span className="font-mono text-lg font-bold tracking-wider text-accent uppercase">
-          Algo Bytes
+          AlgoBytes
         </span>
       </div>
       
