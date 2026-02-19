@@ -80,16 +80,24 @@ export async function POST(
         // Pass user's timezone if available (could be header or body, defaulting to UTC)
         const userTimezone = request.headers.get('x-user-timezone') || 'UTC';
 
+        const { attempt_history } = body; // Extract history from already parsed body
+        const fullHistory = Array.isArray(attempt_history) ? [...attempt_history, emojiGrid] : [emojiGrid];
+
         // Atomic completion via RPC
         const { data: stats, error: rpcError } = await supabase.rpc('complete_challenge', {
             p_user_id: user.id,
             p_challenge_id: challenge.id,
             p_time_taken: timeVal,
-            p_user_timezone: userTimezone
+            p_user_timezone: userTimezone,
+            p_emoji_grid: fullHistory
         });
 
         if (rpcError) {
             console.error('Error completing challenge:', rpcError);
+            return NextResponse.json({
+                error: 'Database update failed',
+                details: rpcError
+            }, { status: 500 });
         } else if (stats && stats.length > 0) {
             const result = stats[0];
             return NextResponse.json({

@@ -124,7 +124,7 @@ export function CompletionModal({
                                 <Button 
                                     variant="ghost" 
                                     onClick={handleHome}
-                                    className="w-full text-muted-foreground hover:text-foreground"
+                                    className="w-full text-muted-foreground hover:text-accent hover:bg-transparent border border-transparent hover:border-accent transition-colors"
                                 >
                                     <Home className="w-4 h-4 mr-2" /> Back to Dashboard
                                 </Button>

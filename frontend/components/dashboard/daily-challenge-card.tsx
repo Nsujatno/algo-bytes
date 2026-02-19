@@ -76,7 +76,7 @@ export function DailyChallengeCard({ streak, challenge }: DailyChallengeCardProp
           <Flame className="h-5 w-5 fill-current" />
           <span className="font-bold">{streak} day streak</span>
         </div>
-        <Link href={`/challenge/${challenge.id}`}>
+        <Link href={challenge.completed ? `/challenge/${challenge.id}?review=true` : `/challenge/${challenge.id}`}>
           <Button 
             size="default" 
             className={cn(

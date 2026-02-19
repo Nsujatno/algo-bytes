@@ -13,6 +13,8 @@ export interface Challenge {
     created_at: string;
     completed?: boolean;
     streak_count?: number;
+    time_taken?: number;
+    emoji_grid?: string[];
 }
 
 export interface ChallengeData {

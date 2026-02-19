@@ -25,7 +25,7 @@ import Link from 'next/link';
 import confetti from 'canvas-confetti';
 import remarkGfm from 'remark-gfm';
 import ReactMarkdown from 'react-markdown';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { CompletionModal } from './completion-modal';
 
 interface ChallengeInterfaceProps {
@@ -56,15 +56,23 @@ export function ChallengeInterface({ challenge }: ChallengeInterfaceProps) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [sidebarWidth, setSidebarWidth] = useState(320);
   const [isResizing, setIsResizing] = useState(false);
-  const [attemptHistory, setAttemptHistory] = useState<string[]>([]);
+  const [attemptHistory, setAttemptHistory] = useState<string[]>(challenge.emoji_grid || []);
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const [showCompletionModal, setShowCompletionModal] = useState(false);
   const [completionStats, setCompletionStats] = useState({
-      timeTaken: 0,
+      timeTaken: challenge.time_taken || 0,
       streakCount: challenge.streak_count || 0,
-      attemptHistory: [] as string[]
+      attemptHistory: challenge.emoji_grid || []
   });
+
+  useEffect(() => {
+      // If in review mode, show modal automatically
+      if (searchParams.get('review') === 'true' && challenge.completed) {
+          setShowCompletionModal(true);
+      }
+  }, [searchParams, challenge.completed]);
 
   // Click-to-place handler (Bidirectional)
   const handleBlockClick = (blockId: string) => {
@@ -297,7 +305,8 @@ export function ChallengeInterface({ challenge }: ChallengeInterfaceProps) {
             },
             body: JSON.stringify({ 
                 solution,
-                time_taken: timeTaken
+                time_taken: timeTaken,
+                attempt_history: attemptHistory
             }),
         });
 
@@ -396,6 +405,16 @@ export function ChallengeInterface({ challenge }: ChallengeInterfaceProps) {
             <div className="text-sm font-mono bg-muted/20 px-3 py-1 rounded">
                {availableBlocks.length} blocks left
             </div>
+            {challenge.completed && (
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowCompletionModal(true)}
+                    className="gap-2 text-muted-foreground hover:text-foreground"
+                >
+                    View Stats
+                </Button>
+            )}
             <Button 
               onClick={validationResult?.correct ? () => router.push('/') : handleValidate}
               disabled={(!validationResult?.correct && workspace.some(b => b === null)) || isValidating} 
