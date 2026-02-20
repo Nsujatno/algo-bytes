@@ -6,15 +6,25 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/utils/supabase/server'
 
 
+
 export async function login(prevState: any, formData: FormData) {
     const supabase = await createClient()
 
-    const data = {
-        email: formData.get('email') as string,
-        password: formData.get('password') as string,
+    const email = formData.get('email')
+    const password = formData.get('password')
+
+    if (!email || typeof email !== 'string') {
+        return { error: 'Email is required' }
     }
 
-    const { error } = await supabase.auth.signInWithPassword(data)
+    if (!password || typeof password !== 'string') {
+        return { error: 'Password is required' }
+    }
+
+    const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+    })
 
     if (error) {
         return { error: error.message }
@@ -27,19 +37,33 @@ export async function login(prevState: any, formData: FormData) {
 export async function signup(prevState: any, formData: FormData) {
     const supabase = await createClient()
 
-    const password = formData.get('password') as string
-    const confirmPassword = formData.get('confirmPassword') as string
+    const email = formData.get('email')
+    const password = formData.get('password')
+    const confirmPassword = formData.get('confirmPassword')
+    const username = formData.get('username')
+
+    if (!username || typeof username !== 'string') {
+        return { error: 'Username is required' }
+    }
+
+    if (!email || typeof email !== 'string') {
+        return { error: 'Email is required' }
+    }
+
+    if (!password || typeof password !== 'string') {
+        return { error: 'Password is required' }
+    }
 
     if (password !== confirmPassword) {
         return { error: 'Passwords do not match' }
     }
 
     const data = {
-        email: formData.get('email') as string,
-        password: password,
+        email,
+        password,
         options: {
             data: {
-                username: formData.get('username') as string,
+                username,
             },
         },
     }
