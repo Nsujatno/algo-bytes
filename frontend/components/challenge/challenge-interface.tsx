@@ -617,6 +617,7 @@ export function ChallengeInterface({ challenge }: ChallengeInterfaceProps) {
                                  <p className="text-sm opacity-90">Great job!</p>
                                </div>
                            </div>
+
                            {challenge.is_daily && (
                                <Button 
                                  variant="outline" 
@@ -625,7 +626,7 @@ export function ChallengeInterface({ challenge }: ChallengeInterfaceProps) {
                                      const timeTaken = Math.floor((Date.now() - startTimeRef.current) / 1000);
                                      const streakText = challenge.streak_count ? `🔥 ${challenge.streak_count} day streak\n` : '';
                                      const historyGrid = attemptHistory.join('\n');
-                                     const text = `Algobytes ${new Date().toLocaleDateString()}\n${challenge.title}\n⏱️ ${timeTaken}s\n${streakText}✅ Solved!\n\n${historyGrid}`;
+                                     const text = `Algobytes ${new Date().toLocaleDateString()}\n${challenge.title}\n⏱️ ${timeTaken}s\n${streakText}✅ Solved!\n\n${historyGrid}\n\nTry now at: https://algobytes.vercel.app/`;
                                      navigator.clipboard.writeText(text);
                                      setIsCopied(true);
                                      setTimeout(() => setIsCopied(false), 2000);

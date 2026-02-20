@@ -5,7 +5,8 @@ import { redirect } from 'next/navigation'
 
 import { createClient } from '@/utils/supabase/server'
 
-export async function login(formData: FormData) {
+
+export async function login(prevState: any, formData: FormData) {
     const supabase = await createClient()
 
     const data = {
@@ -16,19 +17,26 @@ export async function login(formData: FormData) {
     const { error } = await supabase.auth.signInWithPassword(data)
 
     if (error) {
-        redirect('/login?error=Could not authenticate user')
+        return { error: error.message }
     }
 
     revalidatePath('/', 'layout')
     redirect('/')
 }
 
-export async function signup(formData: FormData) {
+export async function signup(prevState: any, formData: FormData) {
     const supabase = await createClient()
+
+    const password = formData.get('password') as string
+    const confirmPassword = formData.get('confirmPassword') as string
+
+    if (password !== confirmPassword) {
+        return { error: 'Passwords do not match' }
+    }
 
     const data = {
         email: formData.get('email') as string,
-        password: formData.get('password') as string,
+        password: password,
         options: {
             data: {
                 username: formData.get('username') as string,
@@ -39,7 +47,7 @@ export async function signup(formData: FormData) {
     const { error } = await supabase.auth.signUp(data)
 
     if (error) {
-        redirect('/error')
+        return { error: error.message }
     }
 
     revalidatePath('/', 'layout')
