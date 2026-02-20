@@ -27,6 +27,7 @@ import remarkGfm from 'remark-gfm';
 import ReactMarkdown from 'react-markdown';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { CompletionModal } from './completion-modal';
+import { Mermaid } from '@/components/ui/mermaid';
 
 interface ChallengeInterfaceProps {
   challenge: Challenge;
@@ -454,7 +455,12 @@ export function ChallengeInterface({ challenge }: ChallengeInterfaceProps) {
            />
 
             <div className="overflow-y-auto h-full min-w-[270px]">
-            <h2 className="text-lg font-bold mb-4">Problem</h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-bold">Problem</h2>
+              <Button variant="ghost" size="icon" onClick={() => setIsSidebarOpen(false)} title="Collapse Sidebar">
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+            </div>
             <div className="text-muted-foreground mb-6 text-sm leading-relaxed prose prose-sm dark:prose-invert max-w-none">
               <ReactMarkdown>{challenge.description}</ReactMarkdown>
             </div>
@@ -470,6 +476,11 @@ export function ChallengeInterface({ challenge }: ChallengeInterfaceProps) {
                  
                  return inputExamples.map((inputEx, i) => (
                    <div key={i}>
+                      {challenge.challenge_data.mermaid_diagrams?.[i] && (
+                        <div className="mb-4">
+                           <Mermaid chart={challenge.challenge_data.mermaid_diagrams[i]} />
+                        </div>
+                      )}
                       <h3 className="text-xs uppercase tracking-wider text-muted-foreground mb-2 font-semibold">Example {i + 1}</h3>
                       <div className="flex flex-col gap-3 pl-3 border-l-2 border-muted/20">
                         <div>
@@ -489,6 +500,23 @@ export function ChallengeInterface({ challenge }: ChallengeInterfaceProps) {
                  ));
               })()}
             </div>
+
+            {/* Constraints Section */}
+             {challenge.challenge_data.constraints && challenge.challenge_data.constraints.length > 0 && (
+                <div className="pt-4 border-t border-border mt-6">
+                  <h3 className="text-sm font-bold flex items-center gap-2 mb-3">
+                    <AlertCircle className="w-4 h-4 text-blue-500" />
+                    Constraints
+                  </h3>
+                  <ul className="list-disc pl-5 space-y-1">
+                    {challenge.challenge_data.constraints.map((constraint, i) => (
+                      <li key={i} className="text-sm text-muted-foreground">
+                        <code className="text-xs font-mono bg-muted/20 px-1 py-0.5 rounded">{constraint}</code>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+             )}
 
                {/* Hints Section */}
               <div className="pt-4 border-t border-border mt-6">
@@ -526,23 +554,20 @@ export function ChallengeInterface({ challenge }: ChallengeInterfaceProps) {
             </div>
           </div>
 
-          {/* Sidebar Toggle Button */}
-          <div className="absolute left-0 top-1/2 -translate-y-1/2 z-10 transition-all duration-300"
-               style={{ left: isSidebarOpen ? `${sidebarWidth - 16}px` : '0px' }}>
-            <Button
-              variant="outline"
-              size="icon"
-              className="h-24 w-6 rounded-r-lg rounded-l-none border-l-0 bg-surface shadow-md hover:bg-muted/50"
-              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-              title={isSidebarOpen ? "Collapse Sidebar" : "Expand Sidebar"}
-            >
-              {isSidebarOpen ? (
-                <ChevronLeft className="h-4 w-4" />
-              ) : (
+          {/* Sidebar Expand Button (Only visible when closed) */}
+          {!isSidebarOpen && (
+            <div className="absolute left-0 top-6 z-10 transition-all duration-300">
+                <Button
+                variant="outline"
+                size="icon"
+                className="h-8 w-8 rounded-r-lg rounded-l-none border-l-0 bg-surface shadow-md hover:bg-muted/50"
+                onClick={() => setIsSidebarOpen(true)}
+                title="Expand Sidebar"
+                >
                 <ChevronRight className="h-4 w-4" />
-              )}
-            </Button>
-          </div>
+                </Button>
+            </div>
+          )}
 
           {/* Right Column: Workspace + Pool */}
           <div className="flex flex-col flex-1 gap-4 min-h-0">

@@ -27,6 +27,7 @@ export interface ChallengeData {
     total_slots: number;
     code_blocks: CodeBlock[];
     decoy_blocks: CodeBlock[];
+    mermaid_diagrams?: string[];
 }
 
 export interface VisualInput {
